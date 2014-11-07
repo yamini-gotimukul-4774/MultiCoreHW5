@@ -22,5 +22,7 @@ public abstract class MyHashTable<T> {
 	public abstract boolean remove(T x);
 
 	public abstract void resize();
+	
+	public abstract List<T> toList();
 
 }

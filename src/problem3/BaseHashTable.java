@@ -78,6 +78,7 @@ public class BaseHashTable<T> extends MyHashTable<T> {
 					table[t.hashCode() % table.length].add(t);
 				}
 			}
+//			System.out.println("resizing");
 		} finally {
 			lock.unlock();
 		}
@@ -114,18 +115,18 @@ public class BaseHashTable<T> extends MyHashTable<T> {
 		 return table_as_list;	
 	}
 	
-	public static void main(String[] args) {
-		MyHashTable<Integer> b = new BaseHashTable<>(4);
-		System.out.println(b.contains(4) + " " + b.add(9) + " " + b.add(9) + " " + b.add(0));
-		for(int i=0; i<10;i++){
-			 b.add(i);
-		}		
-		System.out.println(b);
-		for(int i=0; i<5;i++){
-			 b.remove(i*3);
-		}
-		System.out.println(b);
-		System.out.println();
-	}
+//	public static void main(String[] args) {
+//		MyHashTable<Integer> b = new BaseHashTable<>(4);
+//		System.out.println(b.contains(4) + " " + b.add(9) + " " + b.add(9) + " " + b.add(0));
+//		for(int i=0; i<10;i++){
+//			 b.add(i);
+//		}		
+//		System.out.println(b);
+//		for(int i=0; i<5;i++){
+//			 b.remove(i*3);
+//		}
+//		System.out.println(b);
+//		System.out.println();
+//	}
 
 }
