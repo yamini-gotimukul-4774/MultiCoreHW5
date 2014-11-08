@@ -10,7 +10,7 @@ public class Main {
 
 	public static void evaluate_hash_table(String type) {
 		System.out.println("Evaluating " + type + " hash table ++++++++++++++++++");
-		int total_ops = 250;
+		int total_ops = 25000;
 		int[] n_threads_arr = new int[]{1, 2, 3, 4, 5, 6};
 		for (int t = 0; t < n_threads_arr.length; t++) {
 			int n_threads = n_threads_arr[t];
@@ -83,7 +83,7 @@ public class Main {
 //			if (union_table.containsAll(table.toList()) && (table.toList().containsAll(union_table))) {
 //				System.out.println("table matches union table");
 //			}
-			if (table.size == (n_successful_adds-n_successful_removes)) {
+			if (table.size.get() == (n_successful_adds-n_successful_removes)) {
 				System.out.println("table matches union table");
 			}
 			else {
@@ -91,9 +91,9 @@ public class Main {
 			}
 //			System.out.println("shared table: " + table);
 //			System.out.println("union table: " + union_table);
-//			System.out.println("size of shared table = " + table.size);
+			System.out.println("size of shared table = " + table.size.get());
 //			System.out.println("size of union table = " + union_table.size());
-//			System.out.println("N successful adds = " + n_successful_adds + "; N successful removes = " + n_successful_removes);
+			System.out.println("N successful adds = " + n_successful_adds + "; N successful removes = " + n_successful_removes);
 //			System.out.println("N adds = " + n_adds + "; N removes = " + n_removes + "; N contains = " + n_contains);
 		}
 	}

@@ -3,7 +3,7 @@ package problem3;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicMarkableReference;
-import java.util.concurrent.locks.ReentrantLock;
+//import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class BaseHashTable<T> extends MyHashTable<T> {
@@ -40,7 +40,7 @@ public class BaseHashTable<T> extends MyHashTable<T> {
 			if (!table[bucket].contains(x)) {
 				table[bucket].add(x);
 				wasAdded = true;
-				size++;
+				size.getAndIncrement();
 			}
 		} finally {
 			release(x, "write");
@@ -58,7 +58,7 @@ public class BaseHashTable<T> extends MyHashTable<T> {
 		try {
 			int bucket = x.hashCode() % table.length;
 			if (table[bucket].remove(x)) {
-				size--;
+				size.getAndDecrement();
 				wasRemoved = true;
 			}
 			return wasRemoved;
@@ -70,7 +70,7 @@ public class BaseHashTable<T> extends MyHashTable<T> {
 	@Override
 	public void resize() {
 		int old_capacity = table.length;
-		boolean[] mark = {false};
+//		boolean[] mark = {false};
 		int new_capacity = 2*old_capacity;
 		Thread me = Thread.currentThread();
 		if (owner.compareAndSet(null, me, false, true)) {
@@ -106,7 +106,7 @@ public class BaseHashTable<T> extends MyHashTable<T> {
 	}
 
 	public boolean policy() {
-		return size / table.length > (table.length / 2);
+		return size.get() / table.length > (table.length / 2);
 	}
 
 	public void acquire(T x, String kind) {
@@ -120,9 +120,6 @@ public class BaseHashTable<T> extends MyHashTable<T> {
 			ReentrantReadWriteLock[] oldLocks = locks;
 			ReentrantReadWriteLock oldLock = oldLocks[x.hashCode() % oldLocks.length];
 			if (kind.equals("read")) {
-				if (oldLock.isWriteLockedByCurrentThread()) {
-					return;
-				}
 				oldLock.readLock().lock();
 			}
 			else {
@@ -133,13 +130,10 @@ public class BaseHashTable<T> extends MyHashTable<T> {
 				return;
 			} else {
 				if (kind.equals("read")) {
-					if (oldLock.isWriteLockedByCurrentThread()) {
-						return;
-					}
-					oldLock.readLock().lock();
+					oldLock.readLock().unlock();
 				}
 				else {
-					oldLock.writeLock().lock();
+					oldLock.writeLock().unlock();
 				}
 			}
 		}
@@ -147,9 +141,6 @@ public class BaseHashTable<T> extends MyHashTable<T> {
 
 	public void release(T x, String kind) {
 		if (kind.equals("read")) {
-			if (locks[x.hashCode() % locks.length].isWriteLockedByCurrentThread()) {
-				return;
-			}
 			locks[x.hashCode() % locks.length].readLock().unlock();
 		}
 		else {

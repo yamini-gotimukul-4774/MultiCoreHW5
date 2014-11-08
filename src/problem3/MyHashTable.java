@@ -2,13 +2,14 @@ package problem3;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public abstract class MyHashTable<T> {
 	protected List<T>[] table;
-	protected int size;
+	protected AtomicInteger size;
 
 	public MyHashTable(int capacity) {
-		size = 0;
+		size = new AtomicInteger(0);
 		table = (List<T>[]) new List[capacity];
 		for (int i = 0; i < capacity; i++) {
 			table[i] = new ArrayList<T>();
