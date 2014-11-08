@@ -15,10 +15,10 @@ public class HashTableThread extends Thread {
 	protected long remove_time;
 	
 	// debug:
-	protected HashSet<Integer> local_adds;
-	protected HashSet<Integer> local_removes;
-	protected int n_successful_removes = 0;
-	protected int n_successful_adds = 0;
+//	protected HashSet<Integer> local_adds;
+//	protected HashSet<Integer> local_removes;
+//	protected int n_successful_removes = 0;
+//	protected int n_successful_adds = 0;
 	
 	public HashTableThread(MyHashTable<Integer> table, int n_ops) {
 		this.table = table;
@@ -27,8 +27,8 @@ public class HashTableThread extends Thread {
 		add_time = contains_time = remove_time = 0;
 		
 		// debug:
-		local_adds = new HashSet<Integer>();
-		local_removes = new HashSet<Integer>();
+//		local_adds = new HashSet<Integer>();
+//		local_removes = new HashSet<Integer>();
 	}
 	
 	public void run() {
@@ -48,10 +48,10 @@ public class HashTableThread extends Thread {
 				boolean wasAdded = table.add(val);
 				add_time += System.nanoTime() - t;
 				// debug:
-				if (wasAdded) {
-					n_successful_adds++;
-					local_adds.add(val);
-				}
+//				if (wasAdded) {
+//					n_successful_adds++;
+//					local_adds.add(val);
+//				}
 				// end debug
 			}
 			else {
@@ -60,10 +60,10 @@ public class HashTableThread extends Thread {
 				boolean wasRemoved = table.remove(val);
 				remove_time += System.nanoTime() - t;
 				// debug:
-				if (wasRemoved) {
-					n_successful_removes++;
-					local_removes.add(val);
-				}
+//				if (wasRemoved) {
+//					n_successful_removes++;
+//					local_removes.add(val);
+//				}
 			}
 		}
 		

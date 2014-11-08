@@ -17,6 +17,7 @@ public abstract class MyHashTable<T> {
 
 	public abstract boolean remove(T x);
 	
+	// debug
 	public abstract List<T> toList();
 
 }
