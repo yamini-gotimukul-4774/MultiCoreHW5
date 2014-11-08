@@ -10,10 +10,15 @@ public class BaseHashTable<T> extends MyHashTable<T> {
 	// private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 	private volatile ReentrantReadWriteLock[] locks;
 	private AtomicMarkableReference<Thread> owner;
+	protected List<T>[] table;
 
 	public BaseHashTable(int capacity) {
 		super(capacity);
 		locks = new ReentrantReadWriteLock[capacity];
+		table = (List<T>[]) new List[capacity];
+		for (int i = 0; i < capacity; i++) {
+			table[i] = new ArrayList<T>();
+		}
 		for (int i = 0; i < capacity; i++) {
 			locks[i] = new ReentrantReadWriteLock();
 		}
@@ -67,11 +72,10 @@ public class BaseHashTable<T> extends MyHashTable<T> {
 		}
 	}
 
-	@Override
 	public void resize() {
 		int old_capacity = table.length;
-//		boolean[] mark = {false};
-		int new_capacity = 2*old_capacity;
+		// boolean[] mark = {false};
+		int new_capacity = 2 * old_capacity;
 		Thread me = Thread.currentThread();
 		if (owner.compareAndSet(null, me, false, true)) {
 			try {
@@ -98,10 +102,11 @@ public class BaseHashTable<T> extends MyHashTable<T> {
 			}
 		}
 	}
-	
+
 	protected void quiesce() {
 		for (ReentrantReadWriteLock lock : locks) {
-			while (lock.isWriteLocked()) { }
+			while (lock.isWriteLocked()) {
+			}
 		}
 	}
 
@@ -110,7 +115,7 @@ public class BaseHashTable<T> extends MyHashTable<T> {
 	}
 
 	public void acquire(T x, String kind) {
-		boolean[] mark = {true};
+		boolean[] mark = { true };
 		Thread me = Thread.currentThread();
 		Thread who;
 		while (true) {
@@ -121,8 +126,7 @@ public class BaseHashTable<T> extends MyHashTable<T> {
 			ReentrantReadWriteLock oldLock = oldLocks[x.hashCode() % oldLocks.length];
 			if (kind.equals("read")) {
 				oldLock.readLock().lock();
-			}
-			else {
+			} else {
 				oldLock.writeLock().lock();
 			}
 			who = owner.get(mark);
@@ -131,8 +135,7 @@ public class BaseHashTable<T> extends MyHashTable<T> {
 			} else {
 				if (kind.equals("read")) {
 					oldLock.readLock().unlock();
-				}
-				else {
+				} else {
 					oldLock.writeLock().unlock();
 				}
 			}
@@ -142,13 +145,12 @@ public class BaseHashTable<T> extends MyHashTable<T> {
 	public void release(T x, String kind) {
 		if (kind.equals("read")) {
 			locks[x.hashCode() % locks.length].readLock().unlock();
-		}
-		else {
+		} else {
 			locks[x.hashCode() % locks.length].writeLock().unlock();
 		}
-		
+
 	}
-	
+
 	@Override
 	public String toString() {
 		StringBuilder s = new StringBuilder();
@@ -158,28 +160,29 @@ public class BaseHashTable<T> extends MyHashTable<T> {
 		}
 		return s.toString();
 	}
-	
-	public List<T> toList(){
-		 List<T> table_as_list = new ArrayList<>();
-		 int s = table.length;
-		 for(int i=0;i<s;i++){
-			 table_as_list.addAll(table[i]);
-		 }		 
-		 return table_as_list;	
+
+	public List<T> toList() {
+		List<T> table_as_list = new ArrayList<>();
+		int s = table.length;
+		for (int i = 0; i < s; i++) {
+			table_as_list.addAll(table[i]);
+		}
+		return table_as_list;
 	}
-	
-//	public static void main(String[] args) {
-//		MyHashTable<Integer> b = new BaseHashTable<>(4);
-//		System.out.println(b.contains(4) + " " + b.add(9) + " " + b.add(9) + " " + b.add(0));
-//		for(int i=0; i<10;i++){
-//			 b.add(i);
-//		}		
-//		System.out.println(b);
-//		for(int i=0; i<5;i++){
-//			 b.remove(i*3);
-//		}
-//		System.out.println(b);
-//		System.out.println();
-//	}
+
+	// public static void main(String[] args) {
+	// MyHashTable<Integer> b = new BaseHashTable<>(4);
+	// System.out.println(b.contains(4) + " " + b.add(9) + " " + b.add(9) + " "
+	// + b.add(0));
+	// for(int i=0; i<10;i++){
+	// b.add(i);
+	// }
+	// System.out.println(b);
+	// for(int i=0; i<5;i++){
+	// b.remove(i*3);
+	// }
+	// System.out.println(b);
+	// System.out.println();
+	// }
 
 }

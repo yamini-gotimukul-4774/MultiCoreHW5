@@ -5,12 +5,12 @@ import java.util.HashSet;
 public class Main {
 
 	public static void main(String[] args) {
-		evaluate_hash_table("lock-based");
+		evaluate_hash_table("lock-free");
 	}
 
 	public static void evaluate_hash_table(String type) {
 		System.out.println("Evaluating " + type + " hash table ++++++++++++++++++");
-		int total_ops = 25000;
+		int total_ops = 250;
 		int[] n_threads_arr = new int[]{1, 2, 3, 4, 5, 6};
 		for (int t = 0; t < n_threads_arr.length; t++) {
 			int n_threads = n_threads_arr[t];
@@ -22,6 +22,8 @@ public class Main {
 
 			if (type.equals("lock-based")) {
 				table = new BaseHashTable<Integer>(2);
+			}else if (type.equals("lock-free")) {
+				table = new LockFreeHashTable<Integer>(6000);
 			}
 			else {
 				System.err.println("ERROR: no such hash table implementation");
