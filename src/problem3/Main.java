@@ -10,7 +10,7 @@ public class Main {
 
 	public static void evaluate_hash_table(String type) {
 		System.out.println("Evaluating " + type + " hash table ++++++++++++++++++");
-		int total_ops = 25000;
+		int total_ops = 250;
 		int[] n_threads_arr = new int[]{1, 2, 3, 4, 5, 6};
 		for (int t = 0; t < n_threads_arr.length; t++) {
 			int n_threads = n_threads_arr[t];

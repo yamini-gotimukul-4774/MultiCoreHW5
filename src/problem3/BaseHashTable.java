@@ -2,43 +2,51 @@ package problem3;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicMarkableReference;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class BaseHashTable<T> extends MyHashTable<T> {
 	// private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
-	private final ReentrantLock lock = new ReentrantLock();
+	private volatile ReentrantReadWriteLock[] locks;
+	private AtomicMarkableReference<Thread> owner;
 
 	public BaseHashTable(int capacity) {
 		super(capacity);
+		locks = new ReentrantReadWriteLock[capacity];
+		for (int i = 0; i < capacity; i++) {
+			locks[i] = new ReentrantReadWriteLock();
+		}
+		owner = new AtomicMarkableReference<Thread>(null, false);
 	}
 
 	@Override
 	public boolean contains(T x) {
-		acquire(x);
+		acquire(x, "read");
 		try {
 			int bucket = x.hashCode() % table.length;
 			return table[bucket].contains(x);
 		} finally {
-			release(x);
+			release(x, "read");
 		}
 	}
 
 	@Override
 	public boolean add(T x) {
 		boolean wasAdded = false;
-		acquire(x);
+		acquire(x, "write");
 		try {
 			int bucket = x.hashCode() % table.length;
 			if (!table[bucket].contains(x)) {
 				table[bucket].add(x);
 				wasAdded = true;
 				size++;
-				if (policy()) {
-					resize();
-				}
 			}
 		} finally {
-			release(x);
+			release(x, "write");
+		}
+		if (policy()) {
+			resize();
 		}
 		return wasAdded;
 	}
@@ -46,7 +54,7 @@ public class BaseHashTable<T> extends MyHashTable<T> {
 	@Override
 	public boolean remove(T x) {
 		boolean wasRemoved = false;
-		acquire(x);
+		acquire(x, "write");
 		try {
 			int bucket = x.hashCode() % table.length;
 			if (table[bucket].remove(x)) {
@@ -55,47 +63,101 @@ public class BaseHashTable<T> extends MyHashTable<T> {
 			}
 			return wasRemoved;
 		} finally {
-			release(x);
+			release(x, "write");
 		}
 	}
 
 	@Override
 	public void resize() {
-		int old_cap = table.length;
-		lock.lock();
-		try {
-			if (old_cap != table.length) {
-				return;
-			}
-			int new_cap = old_cap * 2;
-			List<T>[] old_table = table;
-			table = (List<T>[]) new List[new_cap];
-			for (int i = 0; i < new_cap; i++) {
-				table[i] = new ArrayList<T>();
-			}
-			for (List<T> list : old_table) {
-				for (T t : list) {
-					table[t.hashCode() % table.length].add(t);
+		int old_capacity = table.length;
+		boolean[] mark = {false};
+		int new_capacity = 2*old_capacity;
+		Thread me = Thread.currentThread();
+		if (owner.compareAndSet(null, me, false, true)) {
+			try {
+				if (table.length != old_capacity) {
+					return;
 				}
+				quiesce();
+				List<T>[] old_table = table;
+				table = (List<T>[]) new List[new_capacity];
+				for (int i = 0; i < new_capacity; i++) {
+					table[i] = new ArrayList<T>();
+				}
+				locks = new ReentrantReadWriteLock[new_capacity];
+				for (int j = 0; j < locks.length; j++) {
+					locks[j] = new ReentrantReadWriteLock();
+				}
+				for (List<T> list : old_table) {
+					for (T t : list) {
+						table[t.hashCode() % table.length].add(t);
+					}
+				}
+			} finally {
+				owner.set(null, false);
 			}
-//			System.out.println("resizing");
-		} finally {
-			lock.unlock();
 		}
-
+	}
+	
+	protected void quiesce() {
+		for (ReentrantReadWriteLock lock : locks) {
+			while (lock.isWriteLocked()) { }
+		}
 	}
 
 	public boolean policy() {
 		return size / table.length > (table.length / 2);
 	}
 
-	public void acquire(T x) {
-		lock.lock();
+	public void acquire(T x, String kind) {
+		boolean[] mark = {true};
+		Thread me = Thread.currentThread();
+		Thread who;
+		while (true) {
+			do {
+				who = owner.get(mark);
+			} while (mark[0] && who != me);
+			ReentrantReadWriteLock[] oldLocks = locks;
+			ReentrantReadWriteLock oldLock = oldLocks[x.hashCode() % oldLocks.length];
+			if (kind.equals("read")) {
+				if (oldLock.isWriteLockedByCurrentThread()) {
+					return;
+				}
+				oldLock.readLock().lock();
+			}
+			else {
+				oldLock.writeLock().lock();
+			}
+			who = owner.get(mark);
+			if ((!mark[0] || who == me) && locks == oldLocks) {
+				return;
+			} else {
+				if (kind.equals("read")) {
+					if (oldLock.isWriteLockedByCurrentThread()) {
+						return;
+					}
+					oldLock.readLock().lock();
+				}
+				else {
+					oldLock.writeLock().lock();
+				}
+			}
+		}
 	}
 
-	public void release(T x) {
-		lock.unlock();
+	public void release(T x, String kind) {
+		if (kind.equals("read")) {
+			if (locks[x.hashCode() % locks.length].isWriteLockedByCurrentThread()) {
+				return;
+			}
+			locks[x.hashCode() % locks.length].readLock().unlock();
+		}
+		else {
+			locks[x.hashCode() % locks.length].writeLock().unlock();
+		}
+		
 	}
+	
 	@Override
 	public String toString() {
 		StringBuilder s = new StringBuilder();
